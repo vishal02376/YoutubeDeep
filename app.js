@@ -4,7 +4,7 @@ const cors = require('cors');
 const videoRoutes = require('./routes/videoRoutes');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 3000;  // Use Render's assigned port
 
 // Middleware
 app.use(cors());
