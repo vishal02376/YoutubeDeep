@@ -1,4 +1,6 @@
 const youtubedl = require('youtube-dl-exec');
+const fs = require('fs');
+const path = require('path');
 
 // Function to handle progress updates
 const getProgress = (req, res) => {
@@ -23,13 +25,22 @@ const getProgress = (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
+    // Path to cookies file
+    const cookiesPath = path.join(__dirname, 'cookies.txt');
+
+    // Check if cookies file exists
+    if (!fs.existsSync(cookiesPath)) {
+        console.error("Cookies file not found at path:", cookiesPath);
+        return res.status(400).json({ error: "Cookies file not found. Please provide a valid cookies.txt file." });
+    }
+
     // Use youtube-dl-exec to download the video
     const process = youtubedl.exec(videoLink, {
-        format: format === 'mp3' ? 'bestaudio' : 'best',
-        output: '-',
-        quiet: true,
-        noWarnings: true,
-        cookies: 'path/to/cookies.txt', // Add cookies
+        format: format === 'mp3' ? 'bestaudio' : 'best', // Use 'best' for best format
+        output: '-', // Output to stdout
+        quiet: true, // Suppress unnecessary logs
+        noWarnings: true, // Suppress warnings
+        cookies: cookiesPath, // Add cookies
         sleepInterval: 5, // Add delay to avoid rate-limiting
     });
 
@@ -40,7 +51,7 @@ const getProgress = (req, res) => {
         const progressMatch = data.toString().match(/\[download\]\s+(\d+\.\d+)%/);
         if (progressMatch) {
             const progress = parseFloat(progressMatch[1]);
-            res.write(`data: ${JSON.stringify({ progress })}\n\n`);
+            res.write(`data: ${JSON.stringify({ progress })}\n\n`); // Send progress to client
         }
     });
 
@@ -54,11 +65,11 @@ const getProgress = (req, res) => {
     process.on('close', (code) => {
         console.log("Download process closed with code:", code);
         if (code === 0) {
-            res.write(`data: ${JSON.stringify({ completed: true })}\n\n`);
+            res.write(`data: ${JSON.stringify({ completed: true })}\n\n`); // Send completion event
         } else {
-            res.write(`data: ${JSON.stringify({ error: "Download failed" })}\n\n`);
+            res.write(`data: ${JSON.stringify({ error: "Download failed" })}\n\n`); // Send error event
         }
-        res.end();
+        res.end(); // End the SSE connection
     });
 };
 
@@ -80,6 +91,15 @@ const downloadVideo = (req, res) => {
         return res.status(400).json({ error: "Invalid or unsupported video link" });
     }
 
+    // Path to cookies file
+    const cookiesPath = path.join(__dirname, 'cookies.txt');
+
+    // Check if cookies file exists
+    if (!fs.existsSync(cookiesPath)) {
+        console.error("Cookies file not found at path:", cookiesPath);
+        return res.status(400).json({ error: "Cookies file not found. Please provide a valid cookies.txt file." });
+    }
+
     // Set headers for the download
     res.setHeader('Content-Disposition', `attachment; filename="video.${format}"`);
     res.setHeader('Content-Type', format === 'mp3' ? 'audio/mpeg' : 'video/mp4');
@@ -90,6 +110,8 @@ const downloadVideo = (req, res) => {
         output: '-', // Output to stdout
         quiet: true, // Suppress unnecessary logs
         noWarnings: true, // Suppress warnings
+        cookies: cookiesPath, // Add cookies
+        sleepInterval: 5, // Add delay to avoid rate-limiting
     });
 
     console.log("Starting download process...");
