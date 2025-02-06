@@ -4,6 +4,7 @@
   "description": "Backend for YouTube Downloader",
   "main": "app.js",
   "scripts": {
+      "postinstall": "apt-get update && apt-get install -y yt-dlp",
     "build": "curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o yt-dlp && chmod +x yt-dlp"
   },
   "dependencies": {
