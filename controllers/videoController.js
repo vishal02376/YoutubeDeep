@@ -1,6 +1,4 @@
-const youtubedl = require('youtube-dl-exec');
-const fs = require('fs');
-const path = require('path');
+const { exec } = require('child_process');
 
 // Function to handle progress updates
 const getProgress = (req, res) => {
@@ -25,32 +23,8 @@ const getProgress = (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    // Path to cookies file
-    const cookiesPath = path.join(__dirname, 'cookies.txt');
-
-    // Check if cookies file exists (only for Instagram links)
-    const isInstagramLink = videoLink.includes('instagram.com');
-    if (isInstagramLink && !fs.existsSync(cookiesPath)) {
-        console.error("Cookies file not found at path:", cookiesPath);
-        return res.status(400).json({ error: "Cookies file not found. Please provide a valid cookies.txt file for Instagram links." });
-    }
-
-    // Prepare yt-dlp options
-    const ytdlpOptions = {
-        format: format === 'mp3' ? 'bestaudio' : 'best', // Use 'best' for best format
-        output: '-', // Output to stdout
-        quiet: true, // Suppress unnecessary logs
-        noWarnings: true, // Suppress warnings
-        sleepInterval: 5, // Add delay to avoid rate-limiting
-    };
-
-    // Add cookies for Instagram links
-    if (isInstagramLink) {
-        ytdlpOptions.cookies = cookiesPath;
-    }
-
-    // Use youtube-dl-exec to download the video
-    const process = youtubedl.exec(videoLink, ytdlpOptions);
+    // Use yt-dlp to download the video
+    const process = exec(`yt-dlp -f ${format === 'mp3' ? 'bestaudio' : 'best'} -o - ${videoLink}`);
 
     console.log("Starting download process...");
 
@@ -99,36 +73,12 @@ const downloadVideo = (req, res) => {
         return res.status(400).json({ error: "Invalid or unsupported video link" });
     }
 
-    // Path to cookies file
-    const cookiesPath = path.join(__dirname, 'cookies.txt');
-
-    // Check if cookies file exists (only for Instagram links)
-    const isInstagramLink = videoLink.includes('instagram.com');
-    if (isInstagramLink && !fs.existsSync(cookiesPath)) {
-        console.error("Cookies file not found at path:", cookiesPath);
-        return res.status(400).json({ error: "Cookies file not found. Please provide a valid cookies.txt file for Instagram links." });
-    }
-
-    // Prepare yt-dlp options
-    const ytdlpOptions = {
-        format: format === 'mp3' ? 'bestaudio' : 'best', // Use 'best' for best format
-        output: '-', // Output to stdout
-        quiet: true, // Suppress unnecessary logs
-        noWarnings: true, // Suppress warnings
-        sleepInterval: 5, // Add delay to avoid rate-limiting
-    };
-
-    // Add cookies for Instagram links
-    if (isInstagramLink) {
-        ytdlpOptions.cookies = cookiesPath;
-    }
-
     // Set headers for the download
     res.setHeader('Content-Disposition', `attachment; filename="video.${format}"`);
     res.setHeader('Content-Type', format === 'mp3' ? 'audio/mpeg' : 'video/mp4');
 
-    // Use youtube-dl-exec to download the video
-    const process = youtubedl.exec(videoLink, ytdlpOptions);
+    // Use yt-dlp to download the video
+    const process = exec(`yt-dlp -f ${format === 'mp3' ? 'bestaudio' : 'best'} -o - ${videoLink}`);
 
     console.log("Starting download process...");
 
